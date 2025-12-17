@@ -1,5 +1,4 @@
 # users/urls.py
-from .views import create_superuser_once
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
@@ -19,7 +18,6 @@ from .views import (
 
 router = DefaultRouter()
 router.register(r'users', UserViewSet, basename='user')
-path('auth/create-superuser/', create_superuser_once),
 
 
 urlpatterns = [
@@ -29,7 +27,6 @@ urlpatterns = [
     path('auth/csrf/', get_csrf_token, name='get_crf_token'),
     path('auth/check/', check_auth, name='check_auth'),
     path('auth/current-user/', get_current_user, name='current_user'),
-    path('auth/create-superuser/', create_superuser_once),
 
 
     

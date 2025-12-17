@@ -1,6 +1,6 @@
 # users/views.py
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.middleware.csrf import get_token

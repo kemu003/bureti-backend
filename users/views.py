@@ -22,6 +22,7 @@ from .serializers import (
 
 logger = logging.getLogger(__name__)
 
+
 # ==================== SIMPLE SESSION AUTHENTICATION VIEWS ====================
 
 # users/views.py - Update the admin_login function
@@ -633,3 +634,24 @@ def public_login(request):
             'success': False,
             'error': 'An error occurred during login'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_GET
+
+@csrf_exempt
+@require_GET
+def create_superuser_once(request):
+    """
+    TEMPORARY endpoint to create initial superuser on Render
+    REMOVE after first success
+    """
+    if User.objects.filter(is_superuser=True).exists():
+        return HttpResponse("Superuser already exists")
+
+    User.objects.create_superuser(
+        username="admin",
+        email="admin@bureti.go.ke",
+        password="Admin@123"
+    )
+
+    return HttpResponse("Superuser created successfully")

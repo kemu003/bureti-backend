@@ -24,11 +24,13 @@ SECRET_KEY = config(
 
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = config(
-    'ALLOWED_HOSTS',
-    default='localhost,127.0.0.1',
-    cast=Csv()
-)
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    'bureti-backend-63dv.onrender.com',
+    '.onrender.com',
+]
+
 
 
 # =====================================================

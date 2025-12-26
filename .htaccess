@@ -1,0 +1,18 @@
+RewriteEngine On
+RewriteBase /
+
+# Redirect to HTTPS in production
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+
+# Serve static files directly
+RewriteCond %{REQUEST_URI} ^/static/
+RewriteRule ^ - [L]
+
+# Serve media files directly
+RewriteCond %{REQUEST_URI} ^/media/
+RewriteRule ^ - [L]
+
+# Pass all other requests to Django
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^(.*)$ passenger_wsgi.py/$1 [QSA,L]

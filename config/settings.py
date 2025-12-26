@@ -5,6 +5,7 @@ Django settings for Bureti CDF Management System.
 from pathlib import Path
 from datetime import timedelta
 from decouple import config, Csv
+import os
 
 # =====================================================
 # BASE DIR
@@ -22,15 +23,18 @@ SECRET_KEY = config(
     default='django-insecure-change-this-in-production'
 )
 
-DEBUG = config('DEBUG', default=True, cast=bool)
+DEBUG = config('DEBUG', default=False, cast=bool)  # Changed to False for production
 
+# Update ALLOWED_HOSTS for cPanel
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    'bureti-backend-63dv.onrender.com',
+    'Chepalungu-backend-63dv.onrender.com',
     '.onrender.com',
+    '.yourdomain.com',  # Replace with your actual domain
+    '.rapstari.com',  # Replace with your cPanel domain
+    '138.201.203.59',  # Your cPanel server IP if needed
 ]
-
 
 
 # =====================================================
@@ -58,8 +62,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
-
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # ADD THIS for static files
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -73,7 +77,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],  # Added templates directory
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -90,15 +94,32 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 
 # =====================================================
-# DATABASE (SQLite local, Render can override)
+# DATABASE (MySQL for cPanel)
 # =====================================================
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# Use MySQL for cPanel, fallback to SQLite for local
+if config('USE_MYSQL', default=False, cast=bool):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': config('DB_NAME', default='rapstari_cdf'),
+            'USER': config('DB_USER', default='rapstari_cdfuser'),
+            'PASSWORD': config('DB_PASSWORD', default=''),
+            'HOST': config('DB_HOST', default='localhost'),
+            'PORT': config('DB_PORT', default='3306'),
+            'OPTIONS': {
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+                'charset': 'utf8mb4',
+            },
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # =====================================================
@@ -124,13 +145,20 @@ USE_TZ = True
 
 
 # =====================================================
-# STATIC & MEDIA
+# STATIC & MEDIA (Updated for cPanel)
 # =====================================================
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [BASE_DIR / 'static']  # For development static files
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'  # ADD THIS
 
-MEDIA_URL = 'media/'
+# WhiteNoise configuration
+WHITENOISE_MANIFEST_STRICT = False
+WHITENOISE_USE_FINDERS = True
+WHITENOISE_AUTOREFRESH = DEBUG  # Auto-refresh only in debug mode
+
+MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -193,50 +221,81 @@ BLESSED_TEXTS_SENDER_ID = config('BLESSED_TEXTS_SENDER_ID', default='BuretiCDF')
 
 
 # =====================================================
-# CORS & CSRF (FIXED)
+# CORS & CSRF (Updated for production)
 # =====================================================
 
-CORS_ALLOW_ALL_ORIGINS = DEBUG
+CORS_ALLOW_ALL_ORIGINS = DEBUG  # Only allow all in DEBUG mode
 CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = config(
     'CORS_ALLOWED_ORIGINS',
-    default='http://localhost:5173',
+    default='http://localhost:5173,http://127.0.0.1:5173',
     cast=Csv()
 )
 
 CSRF_TRUSTED_ORIGINS = config(
     'CSRF_TRUSTED_ORIGINS',
-    default='http://localhost:5173',
+    default='http://localhost:5173,http://127.0.0.1:5173',
     cast=Csv()
 )
 
 
 # =====================================================
-# EMAIL
+# EMAIL (Updated for production)
 # =====================================================
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+if DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+else:
+    # For production, use SMTP
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+    EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+    EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+    EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+    EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+
 DEFAULT_FROM_EMAIL = 'Bureti CDF <noreply@bureticdf.go.ke>'
 
 
 # =====================================================
-# LOGGING
+# LOGGING (Updated for production)
 # =====================================================
 
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
     'handlers': {
-        'console': {'class': 'logging.StreamHandler'},
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
         'file': {
             'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'debug.log',
+            'filename': BASE_DIR / 'django.log',
+            'formatter': 'verbose',
         },
     },
     'root': {
         'handlers': ['console', 'file'],
-        'level': 'INFO',
+        'level': 'INFO' if DEBUG else 'WARNING',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO' if DEBUG else 'ERROR',
+            'propagate': True,
+        },
     },
 }
 
@@ -249,3 +308,9 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'

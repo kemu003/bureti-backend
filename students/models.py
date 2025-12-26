@@ -36,12 +36,11 @@ class Student(models.Model):
     ]
     
     WARD_CHOICES = [
-        ('Chebunyo', 'Chebunyo'),
-        ('Cheborge', 'Cheborge'),
-        ('Kapkugerwet', 'Kapkugerwet'),
-        ('Kimugu', 'Kimugu'),
-        ('Kipreres', 'Kipreres'),
-        ('Tendeno', 'Tendeno'),
+        ('Nyangores', 'Nyangores'),
+    ('Sigor', 'Sigor'),
+    ('Chebunyo', 'Chebunyo'),
+    ('Siongiroi', 'Siongiroi'),
+    ('kongasis', 'kongasis'),
     ]
     
     # Personal Information
